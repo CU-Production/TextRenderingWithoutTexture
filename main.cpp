@@ -105,7 +105,7 @@ void main() {
   ndc_vpos.x = 2.0f * normalized_vpos.x - 1.0f;
   ndc_vpos.y = -2.0f * normalized_vpos.y + 1.0f;
 
-  gl_Position = vec4(0.5f * ndc_vpos, 0.0f, 1.0f);
+  gl_Position = vec4(ndc_vpos, 0.0f, 1.0f);
   out_uv = position;
   out_text = v_text.text;
 };
@@ -174,7 +174,7 @@ void frame() {
     sg_apply_pipeline(state.pip);
     sg_apply_bindings(&state.bind);
     // sg_draw(0, 6, 1);
-    debug_draw_text(50.0f, 50.0f, 16.0f, "Hello World!");
+    debug_draw_text(50.0f, 50.0f, 32.0f, "Hello World!");
     sg_end_pass();
     sg_commit();
 }

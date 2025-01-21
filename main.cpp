@@ -227,7 +227,18 @@ layout(location=0) in vec2 uv;
 layout(location=1) in flat int text;
 out vec4 frag_color;
 void main() {
+  int char_code = max(min(text - 32, 96), 0);
+
+  ivec2 char_coord = ivec2(floor(uv * vec2(8, 16)));
+
+  uint four_lines = font_data[char_code][char_coord.y/4];
+
+  uint current_line  = (four_lines >> (8*(3-(char_coord.y)%4))) & 0xff;
+  uint current_pixel = (current_line >> (7-char_coord.x)) & 0x01;
+
   frag_color = vec4(uv, 0.0f, 1.0f);
+
+  frag_color = mix(frag_color, vec4(1.0f), current_pixel);
 }
 )";
     _sg_shader_desc.storage_buffers[0] = {

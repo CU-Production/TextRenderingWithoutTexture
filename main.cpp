@@ -37,24 +37,7 @@ void init() {
         assert(0, "Not support storage_buffer");
     }
 
-    float vertices[] = {
-        0.0f,  0.0f,
-        1.0f,  0.0f,
-        0.0f,  1.0f,
-        1.0f,  1.0f,
-   };
     sg_buffer_desc _sg_buffer_desc{};
-    _sg_buffer_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-    _sg_buffer_desc.data = SG_RANGE(vertices);
-    state.bind.vertex_buffers[0] = sg_make_buffer(&_sg_buffer_desc);
-
-    uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
-    _sg_buffer_desc = {};
-    _sg_buffer_desc.type = SG_BUFFERTYPE_INDEXBUFFER;
-    _sg_buffer_desc.data = SG_RANGE(indices);
-    state.bind.index_buffer = sg_make_buffer(&_sg_buffer_desc);
-
-    _sg_buffer_desc = {};
     _sg_buffer_desc.type = SG_BUFFERTYPE_STORAGEBUFFER;
     // _sg_buffer_desc.data = SG_RANGE(sb_texts);
     _sg_buffer_desc.usage = SG_USAGE_STREAM;
@@ -73,7 +56,15 @@ void init() {
     sg_shader_desc _sg_shader_desc{};
     _sg_shader_desc.vertex_func.source = R"(
 #version 430 core
-#extension GL_ARB_shading_language_420pack : enable
+
+const vec2 vertices[4] = {
+  {0.0f, 0.0f,},
+  {1.0f, 0.0f,},
+  {0.0f, 1.0f,},
+  {1.0f, 1.0f,},
+};
+
+const int indices[6] = { 0, 1, 2, 1, 3, 2 };
 
 struct sb_text {
   int text;
@@ -90,10 +81,10 @@ layout(binding=1) readonly buffer vs_params {
   float font_size;
 };
 
-layout(location=0) in vec2 position;
 layout(location=0) out vec2 out_uv;
 layout(location=1) out flat int out_text;
 void main() {
+  vec2 position = vertices[indices[gl_VertexID]];
   sb_text v_text = texts[gl_InstanceID];
   vec2 font_wh = vec2(font_size, 2.0f * font_size);
   vec2 vpos = start_pos + position * font_wh;
@@ -112,7 +103,6 @@ void main() {
 )";
     _sg_shader_desc.fragment_func.source = R"(
 #version 430 core
-#extension GL_ARB_shading_language_420pack : enable
 
 // Original Font Data:
 //
@@ -124,11 +114,11 @@ void main() {
 //
 const uvec4 font_data[96] = {
 
-  { 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
-  { 0x00001010, 0x10101010, 0x00001010, 0x00000000 },
-  { 0x00242424, 0x24000000, 0x00000000, 0x00000000 },
-  { 0x00000024, 0x247E2424, 0x247E2424, 0x00000000 },
-  { 0x00000808, 0x1E20201C, 0x02023C08, 0x08000000 },
+  { 0x00000000, 0x00000000, 0x00000000, 0x00000000 }, // 0x20: SPACE
+  { 0x00001010, 0x10101010, 0x00001010, 0x00000000 }, // 0x21: '!'
+  { 0x00242424, 0x24000000, 0x00000000, 0x00000000 }, // 0x22: '\'
+  { 0x00000024, 0x247E2424, 0x247E2424, 0x00000000 }, // 0x23: '#'
+  { 0x00000808, 0x1E20201C, 0x02023C08, 0x08000000 }, // ...etc... ASCII code
   { 0x00000030, 0x494A3408, 0x16294906, 0x00000000 },
   { 0x00003048, 0x48483031, 0x49464639, 0x00000000 },
   { 0x00101010, 0x10000000, 0x00000000, 0x00000000 },
@@ -256,9 +246,7 @@ void main() {
     sg_shader shd = sg_make_shader(&_sg_shader_desc);
 
     sg_pipeline_desc _sg_pipeline_desc{};
-    _sg_pipeline_desc.shader = shd,
-    _sg_pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
-    _sg_pipeline_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2;
+    _sg_pipeline_desc.shader = shd;
     state.pip = sg_make_pipeline(&_sg_pipeline_desc);
 
     state.pass_action .colors[0] = { .load_action=SG_LOADACTION_CLEAR, .clear_value={0.2f, 0.3f, 0.3f, 1.0f } };
@@ -296,7 +284,7 @@ void frame() {
     sg_apply_pipeline(state.pip);
     sg_apply_bindings(&state.bind);
     // sg_draw(0, 6, 1);
-    debug_draw_text(50.0f, 50.0f, 32.0f, "Hello World!");
+    debug_draw_text(50.0f, 50.0f, 32.0f, "Hello, World!");
     sg_end_pass();
     sg_commit();
 }

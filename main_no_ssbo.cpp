@@ -37,13 +37,6 @@ void init() {
         assert(0, "Not support storage_buffer");
     }
 
-    sg_buffer_desc _sg_buffer_desc{};
-    _sg_buffer_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
-    _sg_buffer_desc.usage = SG_USAGE_STREAM;
-    _sg_buffer_desc.size = sizeof(sb_texts);
-    _sg_buffer_desc.label = "ssbo_texts";
-    state.bind.vertex_buffers[0] = sg_make_buffer(&_sg_buffer_desc);
-
     sg_shader_desc _sg_shader_desc{};
     _sg_shader_desc.vertex_func.source = R"(
 #version 430 core
@@ -242,8 +235,13 @@ void debug_draw_text(float start_pos_x, float start_pos_y, float font_size, std:
         sb_texts[i].vs_offset = i;
     }
 
-    sg_range vs_perinstance_buf_range = { .ptr = sb_texts, .size = sizeof(sb_texts) };
-    sg_update_buffer(state.bind.vertex_buffers[0], vs_perinstance_buf_range);
+    sg_buffer_desc _sg_buffer_desc{};
+    _sg_buffer_desc.type = SG_BUFFERTYPE_VERTEXBUFFER;
+    _sg_buffer_desc.data = SG_RANGE(sb_texts);
+    _sg_buffer_desc.label = "perinstance_texts";
+    sg_buffer perinstance_buffer = sg_make_buffer(&_sg_buffer_desc);
+
+    state.bind.vertex_buffers[0] = perinstance_buffer;
 
     float screen_width = (float)sapp_width();
     float screen_height = (float)sapp_height();
@@ -254,17 +252,19 @@ void debug_draw_text(float start_pos_x, float start_pos_y, float font_size, std:
     vs_params.screen_resolution_h = screen_height;
     vs_params.font_size = font_size;
 
+    sg_apply_pipeline(state.pip);
+    sg_apply_bindings(state.bind);
     sg_apply_uniforms(0, SG_RANGE(vs_params));
-
     sg_draw(0, 6, text.size());
+
+    sg_destroy_buffer(perinstance_buffer);
 }
 
 void frame() {
     sg_pass _sg_pass = { .action = state.pass_action, .swapchain = sglue_swapchain() };
     sg_begin_pass(&_sg_pass);
-    sg_apply_pipeline(state.pip);
-    sg_apply_bindings(&state.bind);
     debug_draw_text(50.0f, 50.0f, 32.0f, "Hello, World!");
+    debug_draw_text(50.0f, 150.0f, 32.0f, "No Font Texture!");
     sg_end_pass();
     sg_commit();
 }
